@@ -1,0 +1,10 @@
+[Unit]
+Description=Attest every day at 4AM +- 1 hr to avoid interruptions
+
+[Timer]
+OnCalendar=*-*-* 04:00:00 America/New_York
+Persistent=true
+RandomizedDelaySec=1h
+
+[Install]
+WantedBy=timers.target
