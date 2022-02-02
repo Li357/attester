@@ -3,3 +3,4 @@ flask
 bs4
 boto3
 python-dotenv
+gunicorn
