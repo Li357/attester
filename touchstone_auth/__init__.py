@@ -239,7 +239,7 @@ class TouchstoneSession:
                     data=bytes(f"sid={prompt_sid}&txid={prompt_response['response']['txid']}", 'utf-8'),
                     headers=extra_prompt_headers)
                 post_prompt_response = json.loads(r.text)
-                self.vlog(post_prompt_response)
+                # self.vlog(post_prompt_response)
                 if post_prompt_response['stat'] != 'OK':
                     raise TouchstoneError("User declined prompt or prompt timed out")
 

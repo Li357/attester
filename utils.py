@@ -17,12 +17,17 @@ class NeverSignedUpError(RuntimeError):
   pass
 
 class MITAtlasAdapter(BaseAdapter):
+  def __init__(self, username):
+    super(MITAtlasAdapter, self).__init__()
+    self.username = username
+
   def send(self, request, stream=False, timeout=None, verify=True, cert=None, proxies=None):
     response = Response()
     response.status_code = 200
     response.url = request.url
     response.request = request
     response.connection = self
+    response.username = self.username
     return response
 
   def close(self):
@@ -65,10 +70,10 @@ def sha_256(string):
 
 def upload_token_to_aws(req):
   mit_atlas_url = req.url
+  username = req.username
   code = get_code_from_url(mit_atlas_url)
   token = get_token(code)
-  decoded = jwt.decode(token['id_token'], algorithm='RS256', options={ 'verify_signature': False })
-  token['id'] = sha_256(decoded['email'])
+  token['id'] = sha_256(username)
 
   response = table.scan(FilterExpression=Attr('id').eq(token['id']))
   if len(response['Items']) > 0:
@@ -93,8 +98,7 @@ def get_new_token(refresh_token):
 
 def remove_from_attests(username):
   try:
-    email = f'{username}@mit.edu'
-    table.delete_item(Key={ 'id': sha_256(email) }, ConditionExpression=Attr('id').exists())
+    table.delete_item(Key={ 'id': sha_256(username) }, ConditionExpression=Attr('id').exists())
   except ClientError as err:
     if err.response['Error']['Code'] == 'ConditionalCheckFailedException':
       raise NeverSignedUpError

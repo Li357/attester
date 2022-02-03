@@ -15,15 +15,17 @@ def index():
 @app.route('/login', methods=['POST'])
 def login():
   session = Session()
-  adapter = MITAtlasAdapter()
+  username = request.form['username']
+  password = request.form['password']
+  adapter = MITAtlasAdapter(username)
   session.mount('mit-atlas://', adapter)
 
   try:
     _ = TouchstoneSession(
       session=session,
       base_url=config.atlas_uri,
-      username=request.form['username'],
-      password=request.form['password'],
+      username=username,
+      password=password,
       verbose=True,
       on_finish=handle_login)
     return render_template('success.html')
