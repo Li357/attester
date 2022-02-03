@@ -1,15 +1,16 @@
-from flask import Flask, request, render_template
-from touchstone_auth import TouchstoneSession
+from flask import Flask, request, render_template, redirect, url_for
+from touchstone_auth import TouchstoneSession, AuthenticationError
 from requests import Session
-from utils import MITAtlasAdapter, upload_token_to_aws
+from utils import MITAtlasAdapter, AlreadySignedUpError, NeverSignedUpError, upload_token_to_aws, remove_from_attests
 from attest import attest
+from werkzeug.exceptions import HTTPException
 import config
 
 app = Flask(__name__)
 
 @app.route('/', methods=['GET'])
 def index():
-  return render_template('index.html')
+  return render_template('index.html', error=request.args.get('error'))
 
 @app.route('/login', methods=['POST'])
 def login():
@@ -25,10 +26,27 @@ def login():
       password=request.form['password'],
       verbose=True,
       on_finish=handle_login)
-    return render_template('success.html', username=request.form['username'])
-  except Exception as err:
-    print('Error!', err)
-    return render_template('fail.html'), 500
+    return render_template('success.html')
+  except AuthenticationError:
+    return redirect(url_for('.index', error='Wrong username or password!')), 303
+  except AlreadySignedUpError:
+    return render_template('bruh.html')
+
+@app.route('/remove', methods=['POST'])
+def remove():
+  username = request.form['username']
+  try:
+    remove_from_attests(username)
+    return render_template('goodbye.html')
+  except NeverSignedUpError:
+    return redirect(url_for('.index', error=f'{username} is not signed up for automagic attests!')), 303
+
+@app.errorhandler(Exception)
+def handle_exception(err):
+  if isinstance(err, HTTPException):
+      return err
+  print('Error!', type(err).__name__, err)
+  return render_template('fail.html'), 500
 
 def handle_login(request):
   token = upload_token_to_aws(request)

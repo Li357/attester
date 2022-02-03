@@ -11,6 +11,7 @@ import pathlib
 import pickle
 import re
 from typing import Union
+from xml.dom.minidom import Attr
 try:
     from typing import Literal
 except ImportError:
@@ -20,6 +21,9 @@ except ImportError:
 from bs4 import BeautifulSoup  # type: ignore
 import requests
 import requests.utils
+
+class AuthenticationError(RuntimeError):
+    """Represents error with incorrect username/password"""
 
 class TouchstoneError(RuntimeError):
     """Represents all returnable Touchstone Errors"""
@@ -139,7 +143,11 @@ class TouchstoneSession:
         })
 
         duo_html = BeautifulSoup(r.text, features='html.parser')
-        duo_script = duo_html.find(id='duo_container').findChildren('script')[1].string
+        
+        try:
+          duo_script = duo_html.find(id='duo_container').findChildren('script')[1].string
+        except AttributeError:
+          raise AuthenticationError("Login presented wrong username and password!")
 
         # Clean up json string before decoding
         duo_connect_string = re.search(

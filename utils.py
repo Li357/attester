@@ -1,12 +1,20 @@
-from sqlite3 import adapters
 from requests.adapters import BaseAdapter
 from requests.models import Response
 import requests
 import boto3
+from boto3.dynamodb.conditions import Attr
+from botocore.exceptions import ClientError
 import base64
 from urllib.parse import urlparse, parse_qs
-from uuid import uuid4
+from hashlib import sha256
+import jwt
 import config
+
+class AlreadySignedUpError(RuntimeError):
+  pass
+
+class NeverSignedUpError(RuntimeError):
+  pass
 
 class MITAtlasAdapter(BaseAdapter):
   def send(self, request, stream=False, timeout=None, verify=True, cert=None, proxies=None):
@@ -25,6 +33,7 @@ dynamodb = boto3.resource(
   aws_access_key_id=config.aws_access_id,
   aws_secret_access_key=config.aws_access_key,
   region_name='us-east-1')
+table = dynamodb.Table('AttesterRefreshTokens')
 
 def get_code_from_url(url):
   parsed = urlparse(url)
@@ -51,12 +60,21 @@ def get_token(code):
     })
   return res.json()
 
+def sha_256(string):
+  return sha256(string.encode('utf-8')).hexdigest()
+
 def upload_token_to_aws(req):
   mit_atlas_url = req.url
   code = get_code_from_url(mit_atlas_url)
   token = get_token(code)
-  token['id'] = str(uuid4())
-  dynamodb.Table('AttesterRefreshTokens').put_item(Item=token)
+  decoded = jwt.decode(token['id_token'], algorithm='RS256', options={ 'verify_signature': False })
+  token['id'] = sha_256(decoded['email'])
+
+  response = table.scan(FilterExpression=Attr('id').eq(token['id']))
+  if len(response['Items']) > 0:
+    raise AlreadySignedUpError(token['id'])
+
+  table.put_item(Item=token)
   return token
 
 def get_new_token(refresh_token):
@@ -72,3 +90,12 @@ def get_new_token(refresh_token):
       'refresh_token': refresh_token
     })
   return res.json()
+
+def remove_from_attests(username):
+  try:
+    email = f'{username}@mit.edu'
+    table.delete_item(Key={ 'id': sha_256(email) }, ConditionExpression=Attr('id').exists())
+  except ClientError as err:
+    if err.response['Error']['Code'] == 'ConditionalCheckFailedException':
+      raise NeverSignedUpError
+    raise err

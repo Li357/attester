@@ -2,34 +2,49 @@
 <html>
 
 <head>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>attestfor.me</title>
   <link rel="stylesheet" href="{{ url_for('.static', filename='index.css') }}">
 </head>
 
 <body>
-  <form class="login-container" method="post" action="/login" id="login-form">
+  <form class="container" method="post" action="/login" id="login-form">
     <h3>Welcome to attestfor.me!</h3>
     <p>
       Log in with your kerb, accept the duo push, and have your attestation done for you every day at 4am±1hr
       automagically!
     </p>
-    <input id="login-form-kerb" type="text" placeholder="Enter kerb" name="username" required />
-    <input type="password" placeholder="Enter password" name="password" required />
-    <input id="login-form-submit" type="submit" value="Submit">
-    <p id="seen-kerb-warning">You've already used attestfor.me with this kerb, use again at own risk!</p>
+    {% if error: %}
+    <p id="login-error">{{ error }}</p>
+    {% endif %}
+    <input id="login-form-kerb" type="text" placeholder="Enter kerb without @mit.edu" name="username" required />
+    <input type="password" placeholder="Enter password" name="password" required autocapitalize="off" autofocus />
+    <input id="login-form-submit" type="submit" value="Login" />
+  </form>
+  <form class="container" method="post" action="/remove" id="remove-form">
+    <h3>Want to stop automagic attests?</h3>
+    <input id="remove-form-kerb" type="text" placeholder="Enter kerb without @mit.edu" name="username" required />
+    <input id="remove-form-submit" type="submit" value="Remove Me" autocomplete="off" />
   </form>
   <script>
-    const seenKerbs = JSON.parse(localStorage.getItem('seenKerbs')) || [];
-    document.getElementById('login-form-kerb').addEventListener('input', (event) => {
-      const { value } = event.target;
-      const visibility = seenKerbs.includes(value) ? 'visible' : 'hidden';
-      document.getElementById('seen-kerb-warning').style.visibility = visibility;
-    });
+    const loginSubmit = document.getElementById('login-form-submit');
+    const removeSubmit = document.getElementById('remove-form-submit');
 
     document.getElementById('login-form').addEventListener('submit', () => {
-      const submit = document.getElementById('login-form-submit');
-      submit.disabled = true;
-      submit.value = 'Logging you in...';
+      loginSubmit.disabled = true;
+      loginSubmit.value = 'Logging you in...';
+    });
+
+    document.getElementById('remove-form').addEventListener('submit', () => {
+      removeSubmit.disabled = true;
+      removeSubmit.value = 'Removing you...';
+    });
+
+    window.addEventListener('hashchange', (event) => {
+      loginSubmit.disabled = false;
+      loginSubmit.value = 'Login';
+      removeSubmit.disabled = false;
+      removeSubmit.value = 'Remove Me';
     });
   </script>
 </body>

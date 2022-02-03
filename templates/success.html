@@ -12,11 +12,6 @@
     As a check, you should see an attestation submitted email in ~5 minutes. Then they should start
     rolling in at around 4am everyday.
   </p>
-  <script>
-    const seenKerbs = JSON.parse(localStorage.getItem('seenKerbs')) || [];
-    const kerb = '{{ username }}';
-    localStorage.setItem('seenKerbs', JSON.stringify([...seenKerbs, kerb]));
-  </script>
 </body>
 
 </html>
