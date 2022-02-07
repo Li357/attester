@@ -1,7 +1,7 @@
 from flask import Flask, request, render_template, redirect, url_for
 from touchstone_auth import TouchstoneSession, AuthenticationError
 from requests import Session
-from utils import MITAtlasAdapter, AlreadySignedUpError, NeverSignedUpError, upload_token_to_aws, remove_from_attests
+from utils import MITAtlasAdapter, AlreadySignedUpError, NeverSignedUpError, leave_comment, upload_token_to_aws, remove_from_attests
 from attest import attest
 from werkzeug.exceptions import HTTPException
 import config
@@ -42,6 +42,11 @@ def remove():
     return render_template('goodbye.html')
   except NeverSignedUpError:
     return redirect(url_for('.index', error=f'{username} is not signed up for automagic attests!')), 303
+
+@app.route('/comment', methods=['POST'])
+def comment():
+  leave_comment(request.form['comment'])
+  return render_template('thanks.html')
 
 @app.errorhandler(Exception)
 def handle_exception(err):

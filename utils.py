@@ -7,8 +7,9 @@ from botocore.exceptions import ClientError
 import base64
 from urllib.parse import urlparse, parse_qs
 from hashlib import sha256
-import jwt
 import config
+import random
+from datetime import datetime
 
 class AlreadySignedUpError(RuntimeError):
   pass
@@ -39,6 +40,7 @@ dynamodb = boto3.resource(
   aws_secret_access_key=config.aws_access_key,
   region_name='us-east-1')
 table = dynamodb.Table('AttesterRefreshTokens')
+comments = dynamodb.Table('AttesterComments')
 
 def get_code_from_url(url):
   parsed = urlparse(url)
@@ -103,3 +105,9 @@ def remove_from_attests(username):
     if err.response['Error']['Code'] == 'ConditionalCheckFailedException':
       raise NeverSignedUpError
     raise err
+
+def leave_comment(comment):
+  # timestamp is our primary key, so we add a random number after the timestamp to really ensure
+  # no two keys have the same id
+  timestamp_id = f'{datetime.utcnow()} {random.randint(0, 10)}'
+  comments.put_item(Item={ 'timestamp': timestamp_id, 'comment': comment })

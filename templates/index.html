@@ -24,8 +24,26 @@
   <form class="container" method="post" action="/remove" id="remove-form">
     <h3>Want to stop automagic attests?</h3>
     <input id="remove-form-kerb" type="text" placeholder="Enter kerb without @mit.edu" name="username" required />
-    <input id="remove-form-submit" type="submit" value="Remove Me" autocomplete="off" />
+    <input id="remove-form-submit" type="submit" value="Remove Me" />
   </form>
+  <form class="container" method="post" action="/comment" id="comment-form">
+    <h3>Any comments?</h3>
+    <textarea id="comment-form-comment" type="text" placeholder="Send me your comments!" name="comment"
+      required></textarea>
+    <input id="comment-form-submit" type="submit" value="Submit" />
+  </form>
+  <div class="container">
+    <h3>FAQ</h3>
+    <h4>What password do I use?</h4>
+    <p>The password is the one associated with your kerb (sorry we don't support certificates 😞)</p>
+    <h4>What if I use Duo phone calls/texts?</h4>
+    <p>We don't support those Duo options (yet) but stayed tuned depending on demand...</p>
+    <h4>What happens to my kerb/password?</h4>
+    <p>
+      attestfor.me saves a (practically irreversible and unrecognizable) SHA256 hash of your kerb. It also necessarily
+      stores an OAuth refresh token associated with you for it to work.
+    </p>
+  </div>
   <script>
     const loginSubmit = document.getElementById('login-form-submit');
     const removeSubmit = document.getElementById('remove-form-submit');
@@ -45,6 +63,13 @@
       loginSubmit.value = 'Login';
       removeSubmit.disabled = false;
       removeSubmit.value = 'Remove Me';
+    });
+
+    const textarea = document.getElementById('comment-form-comment');
+    textarea.style = `height: ${textarea.scrollHeight}px; overflow-y: hidden;`;
+    textarea.addEventListener('input', function () {
+      this.style.height = 'auto';
+      this.style.height = `${this.scrollHeight}px`;
     });
   </script>
 </body>
